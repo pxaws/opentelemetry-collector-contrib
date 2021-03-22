@@ -9,5 +9,5 @@ require (
 	go.opentelemetry.io/collector v0.21.1-0.20210225192722-e6319ac4c6fc
 	go.opentelemetry.io/otel v0.17.0
 	go.uber.org/zap v1.16.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0
 )
