@@ -540,7 +540,8 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	fields["Sources"] = "[\"cadvisor\",\"pod\",\"calculated\"]"
 
 	config := &Config{
-		ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources"},
+		//include a non-existing key and a key whose value are not json
+		ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName"},
 	}
 
 	met := &CWMetrics{
