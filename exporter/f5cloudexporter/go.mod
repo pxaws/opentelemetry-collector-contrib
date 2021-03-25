@@ -15,6 +15,6 @@ require (
 	go.opentelemetry.io/collector v0.23.1-0.20210325165544-a675700280f5
 	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
-	google.golang.org/api v0.42.0
+	google.golang.org/api v0.43.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
