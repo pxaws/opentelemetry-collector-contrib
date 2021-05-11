@@ -3,8 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.16
 
 require (
+<<<<<<< HEAD
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.0.0-00010101000000-000000000000
+=======
+	github.com/aws/aws-sdk-go v1.38.3
+	github.com/shirou/gopsutil v3.21.4+incompatible
+>>>>>>> 1abec0dac... add host relevant info for container insight receiver
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.27.1-0.20210602134904-017aa1dad750
 	go.uber.org/zap v1.17.0
