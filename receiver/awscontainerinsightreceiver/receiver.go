@@ -49,9 +49,7 @@ type awsContainerInsightReceiver struct {
 func New(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.Metrics,
-	cadvisor MetricsProvider,
-	k8sapiserver MetricsProvider) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -60,8 +58,6 @@ func New(
 		logger:       logger,
 		nextConsumer: nextConsumer,
 		config:       config,
-		cadvisor:     cadvisor,
-		k8sapiserver: k8sapiserver,
 	}
 	return r, nil
 }
@@ -70,7 +66,7 @@ func New(
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, acir.config.ID(), "http"))
 	machineInfo, _ := hostInfo.NewInfo(acir.config.CollectionInterval, acir.logger)
-	acir.cadvisor = cadvisor.New(acir.config.ContainerOrchestrator, machineInfo, acir.logger)
+	acir.cadvisor, _ = cadvisor.New(acir.config.ContainerOrchestrator, machineInfo, acir.logger)
 	//ignore the error for now, will address it in later PR (we might move the intialization to factory.go)
 	acir.k8sapiserver, _ = k8sapiserver.New(machineInfo, acir.logger)
 
