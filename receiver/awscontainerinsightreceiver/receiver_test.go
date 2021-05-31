@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package awscontainerinsightreceiver
 
 import (
@@ -50,6 +49,8 @@ func TestReceiver(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		consumertest.NewNop(),
+		&MockCadvisor{},
+		&MockCadvisor{},
 	)
 
 	require.NoError(t, err)
@@ -71,6 +72,8 @@ func TestReceiverForNilConsumer(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		nil,
+		&MockCadvisor{},
+		&MockCadvisor{},
 	)
 
 	require.NotNil(t, err)
@@ -83,6 +86,8 @@ func TestCollectData(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		new(consumertest.MetricsSink),
+		&MockCadvisor{},
+		&MockCadvisor{},
 	)
 
 	require.NoError(t, err)
@@ -108,6 +113,8 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		consumertest.NewErr(errors.New("an error")),
+		&MockCadvisor{},
+		&MockCadvisor{},
 	)
 
 	require.NoError(t, err)
