@@ -16,88 +16,59 @@ package kubeletutil
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"strings"
-	"time"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/tls"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
-type KubeClient struct {
-	Port            string
-	BearerToken     string
-	KubeIP          string
-	responseTimeout time.Duration
-	roundTripper    http.RoundTripper
-	tls.ClientConfig
+type KubeletClient struct {
+	KubeIP     string
+	Port       string
+	restClient kubelet.RestClient
 }
 
-var ErrKubeClientAccessFailure = errors.New("KubeClinet Access Failure")
+func NewKubeletClient(kubeIP string, port string, logger *zap.Logger) (*KubeletClient, error) {
+	kubeClient := &KubeletClient{
+		Port:   port,
+		KubeIP: kubeIP,
+	}
 
-func (k *KubeClient) ListPods() ([]corev1.Pod, error) {
+	endpoint := kubeIP + ":" + port
+
+	// use service account for authentication
+	clientConfig := &kubelet.ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeServiceAccount,
+		},
+	}
+
+	clientProvider, err := kubelet.NewClientProvider(endpoint, clientConfig, logger)
+	if err != nil {
+		return nil, err
+	}
+	client, err := clientProvider.BuildClient()
+	if err != nil {
+		return nil, err
+	}
+	kubeClient.restClient = kubelet.NewRestClient(client)
+	return kubeClient, nil
+}
+
+func (k *KubeletClient) ListPods() ([]corev1.Pod, error) {
 	var result []corev1.Pod
-	var req *http.Request
-	url := fmt.Sprintf("https://%s:%s/pods", k.KubeIP, k.Port)
-
-	req, _ = http.NewRequest("GET", url, nil)
-	var resp *http.Response
-
-	k.InsecureSkipVerify = true
-	tlsCfg, err := k.ClientConfig.TLSConfig()
+	b, err := k.restClient.Pods()
 	if err != nil {
-		return result, err
-	}
-
-	if k.roundTripper == nil {
-		// Set default values
-		if k.responseTimeout < time.Second {
-			k.responseTimeout = time.Second * 5
-		}
-		k.roundTripper = &http.Transport{
-			TLSHandshakeTimeout:   5 * time.Second,
-			TLSClientConfig:       tlsCfg,
-			ResponseHeaderTimeout: k.responseTimeout,
-		}
-	}
-
-	if k.BearerToken != "" {
-		var token []byte
-		if token, err = ioutil.ReadFile(k.BearerToken); err != nil {
-			return result, err
-		}
-		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(string(token)))
-	}
-	req.Header.Add("Accept", "application/json")
-
-	resp, err = k.roundTripper.RoundTrip(req)
-	if err != nil {
-		log.Printf("E! error making HTTP request to %s: %s", url, err)
-		return result, ErrKubeClientAccessFailure
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("E! %s returned HTTP status %s", url, resp.Status)
-		return result, ErrKubeClientAccessFailure
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("E! Fail to read request %s body: %s", req.URL.String(), err)
-		return result, err
+		return result, fmt.Errorf("call to /pods endpoint failed: %v", err)
 	}
 
 	pods := corev1.PodList{}
 	err = json.Unmarshal(b, &pods)
 	if err != nil {
-		log.Printf("E! parsing response: %s", err)
-		return result, err
+		return result, fmt.Errorf("parsing response failed: %v", err)
 	}
 
 	return pods.Items, nil

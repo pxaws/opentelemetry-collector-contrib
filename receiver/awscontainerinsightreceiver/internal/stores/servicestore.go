@@ -53,6 +53,7 @@ func (s *ServiceStore) RefreshTick() {
 	}
 }
 
+// Decorate decorates metrics and update kubernetesBlob
 // service info is not mandatory
 func (s *ServiceStore) Decorate(metric CIMetric, kubernetesBlob map[string]interface{}) bool {
 	if metric.HasTag(ci.K8sPodNameKey) {

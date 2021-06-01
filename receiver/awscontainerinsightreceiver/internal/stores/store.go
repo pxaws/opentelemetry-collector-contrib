@@ -14,7 +14,7 @@
 
 package stores
 
-// raw metric interface for container insights
+// CIMetric represents the raw metric interface for container insights
 type CIMetric interface {
 	HasField(key string) bool
 	AddField(key string, val interface{})
@@ -30,4 +30,4 @@ type K8sStore interface {
 	RefreshTick()
 }
 
-// TODO: add code to intialize pod and service store and provide api for decorating metrics
+// TODO: add code to initialize pod and service store and provide api for decorating metrics

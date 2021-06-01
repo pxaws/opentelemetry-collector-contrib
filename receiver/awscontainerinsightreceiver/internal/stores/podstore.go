@@ -23,18 +23,17 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
-
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
 	refreshInterval    = 30 * time.Second
-	MeasurementsExpiry = 10 * time.Minute
-	PodsExpiry         = 2 * time.Minute
+	measurementsExpiry = 10 * time.Minute
+	podsExpiry         = 2 * time.Minute
 	memoryKey          = "memory"
 	cpuKey             = "cpu"
 	splitRegexStr      = "\\.|-"
@@ -96,7 +95,7 @@ type replicaSetInfo interface {
 type PodStore struct {
 	cache            *mapWithExpiry
 	prevMeasurements map[string]*mapWithExpiry //preMeasurements per each Type (Pod, Container, etc)
-	kubeClient       *kubeletutil.KubeClient
+	kubeletClient    *kubeletutil.KubeletClient
 	replicasetInfo   replicaSetInfo
 	lastRefreshed    time.Time
 	nodeInfo         *nodeInfo
@@ -105,21 +104,26 @@ type PodStore struct {
 	sync.Mutex
 }
 
-func NewPodStore(hostIP string, prefFullPodName bool) *PodStore {
+func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodStore, error) {
+	kubeletClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	podStore := &PodStore{
-		cache:            newMapWithExpiry(PodsExpiry),
+		cache:            newMapWithExpiry(podsExpiry),
 		prevMeasurements: make(map[string]*mapWithExpiry),
-		kubeClient:       &kubeletutil.KubeClient{Port: ci.KubeSecurePort, BearerToken: ci.BearerToken, KubeIP: hostIP},
+		kubeletClient:    kubeletClient,
 		nodeInfo:         newNodeInfo(),
 		prefFullPodName:  prefFullPodName,
 	}
 
 	// Try to detect kubelet permission issue here
-	if _, err := podStore.kubeClient.ListPods(); err != nil {
-		panic(fmt.Sprintf("Cannot get pod from kubelet, err: %v", err))
+	if _, err := podStore.kubeletClient.ListPods(); err != nil {
+		return nil, fmt.Errorf("cannot get pod from kubelet, err: %v", err)
 	}
 
-	return podStore
+	return podStore, nil
 }
 
 func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}, bool) {
@@ -140,7 +144,7 @@ func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}
 func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content interface{}) {
 	prevMeasurement, ok := p.prevMeasurements[metricType]
 	if !ok {
-		prevMeasurement = newMapWithExpiry(MeasurementsExpiry)
+		prevMeasurement = newMapWithExpiry(measurementsExpiry)
 		p.prevMeasurements[metricType] = prevMeasurement
 	}
 	prevMeasurement.Set(metricKey, content)
@@ -225,7 +229,7 @@ func (p *PodStore) getNodeStats() nodeStats {
 }
 
 func (p *PodStore) refresh(now time.Time) {
-	podList, _ := p.kubeClient.ListPods()
+	podList, _ := p.kubeletClient.ListPods()
 	p.refreshInternal(now, podList)
 }
 

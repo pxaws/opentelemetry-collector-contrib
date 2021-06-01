@@ -31,6 +31,7 @@ const (
 	cronJobAllowedString       = "0123456789"
 )
 
+// CreatePodKey creates a pod key out of namespace and pod name
 // TODO: to remove it after we merged the k8s utils PR
 func CreatePodKey(namespace, podName string) string {
 	if namespace == "" || podName == "" {
@@ -39,6 +40,7 @@ func CreatePodKey(namespace, podName string) string {
 	return fmt.Sprintf("namespace:%s,podName:%s", namespace, podName)
 }
 
+// CreateContainerKey creates a container key out of namespace, pod name and container name
 // TODO: to remove it after we merged the k8s utils PR
 func CreateContainerKey(namespace, podName, containerName string) string {
 	if namespace == "" || podName == "" || containerName == "" {
