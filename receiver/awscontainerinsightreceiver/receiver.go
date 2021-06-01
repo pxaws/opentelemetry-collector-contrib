@@ -69,7 +69,8 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 	ctx, acir.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, acir.config.ID(), "http"))
 	machineInfo := hostInfo.NewMachineInfo(acir.config.CollectionInterval, acir.logger)
 	acir.cadvisor = cadvisor.New(acir.config.ContainerOrchestrator, machineInfo, acir.logger)
-	acir.k8sapiserver = k8sapiserver.New(machineInfo, acir.logger)
+	//ignore the error for now, will address it in later PR (we might move the intialization to factory.go)
+	acir.k8sapiserver, _ = k8sapiserver.New(machineInfo, acir.logger)
 
 	// TODO: add more intialization code
 
