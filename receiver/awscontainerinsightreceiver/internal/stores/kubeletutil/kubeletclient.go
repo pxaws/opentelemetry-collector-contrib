@@ -22,13 +22,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 )
 
 type KubeletClient struct {
 	KubeIP     string
 	Port       string
-	restClient kubelet.RestClient
+	restClient kubelet.Client
 }
 
 func NewKubeletClient(kubeIP string, port string, logger *zap.Logger) (*KubeletClient, error) {
@@ -54,13 +54,13 @@ func NewKubeletClient(kubeIP string, port string, logger *zap.Logger) (*KubeletC
 	if err != nil {
 		return nil, err
 	}
-	kubeClient.restClient = kubelet.NewRestClient(client)
+	kubeClient.restClient = client
 	return kubeClient, nil
 }
 
 func (k *KubeletClient) ListPods() ([]corev1.Pod, error) {
 	var result []corev1.Pod
-	b, err := k.restClient.Pods()
+	b, err := k.restClient.Get("/pods")
 	if err != nil {
 		return result, fmt.Errorf("call to /pods endpoint failed: %v", err)
 	}
