@@ -101,7 +101,7 @@ type Cadvisor struct {
 	containerOrchestrator string
 }
 
-func overrideCadvisorFlagDefault(logger *zap.Logger) {
+func init() {
 	flagOverrides := map[string]string{
 		// Override the default cAdvisor housekeeping interval.
 		"housekeeping_interval": defaultHousekeepingInterval.String(),
@@ -111,8 +111,6 @@ func overrideCadvisorFlagDefault(logger *zap.Logger) {
 		if f := flag.Lookup(name); f != nil {
 			f.DefValue = defaultValue
 			f.Value.Set(defaultValue)
-		} else {
-			logger.Warn("Expected cAdvisor flag not found", zap.String("name", name))
 		}
 	}
 }
@@ -131,7 +129,6 @@ func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, op
 		createCadvisorManager: defaultCreateManager,
 		containerOrchestrator: containerOrchestrator,
 	}
-	overrideCadvisorFlagDefault(logger)
 
 	// apply additional options
 	for _, option := range options {
