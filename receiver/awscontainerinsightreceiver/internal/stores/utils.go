@@ -148,9 +148,8 @@ func TagMetricSource(metric CIMetric) {
 		sources = append(sources, []string{"cadvisor", "calculated"}...)
 	case ci.TypeContainerDiskIO:
 		sources = append(sources, []string{"cadvisor"}...)
-		// TODO: add the sources tagging to k8s api server
-		// case ci.TypeCluster, ci.TypeClusterService, ci.TypeClusterNamespace:
-		// 	sources = append(sources, []string{"apiserver"}...)
+	case ci.TypeCluster, ci.TypeClusterService, ci.TypeClusterNamespace:
+		sources = append(sources, []string{"apiserver"}...)
 	}
 
 	if len(sources) > 0 {
